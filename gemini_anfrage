@@ -1,0 +1,43 @@
+​Projekt-Spezifikation: Modularer RaceTracker (Bierkastenrennen)
+​1. Kernkonzept
+​Eine leichtgewichtige Web-App zur Zeiterfassung und Punkteauswertung für Events. Die App basiert auf PHP (Backend), SQLite (Datenbank), HTML5/CSS3 (Frontend) und JavaScript/AJAX (Interaktion). Die Architektur ist strikt modular aufgebaut.
+​2. Datenbank-Struktur (SQLite)
+​users: id, username, password (gehasht), name, login_token (für persistenten QR-Login).
+​stations: id, name.
+​participants: id, teamname, p1, p2, custom_id (Hex/QR-Code String).
+​results: id, timestamp, participant_id, station_id, user_id, points, time_seconds, type (points/time).
+​3. Modulare Architektur
+​Die App nutzt ein zentrales Routing-System über die index.php?module=X.
+​Verzeichnisstruktur:
+​/data: Beinhaltet die .sqlite Datei (Schreibrechte erforderlich).
+​/includes: Datenbankverbindung (db.php) und Authentifizierungslogik.
+​/modules: Einzelne PHP-Module (Login, Station, Admin, Display).
+​/api: Endpunkte für AJAX-Abfragen (Live-Daten).
+​/assets: CSS und JS (inkl. html5-qrcode Bibliothek).
+​4. Funktionsbeschreibung der Module
+​A. Authentifizierung & Persistent Login
+​Login: Support für klassischen Passwort-Login und QR-Code Login.
+​Persistence: Bei Erfolg wird ein login_token in einem Cookie gespeichert (30 Tage gültig), um automatisches Einloggen auf dem Gerät zu ermöglichen.
+​B. Modul: Station (Erfassung)
+​Ablauf: Wahl einer Station -> Scanner öffnet sich.
+​Input: Teilnehmer-ID via QR-Scanner (Kamera) oder manuelles Textfeld (Fallback).
+​Daten: Umschalter zwischen "Punkten" und "Zeit" (Format mm:ss).
+​Speichern: Eintrag in results mit Zeitstempel und User-ID des Helfers.
+​C. Modul: Administration
+​Team-Management: Anlegen/Löschen von Teilnehmern. QR-Scanner zur Zuweisung einer custom_id zu einem Teamnamen.
+​Stations-Management: Definieren der Stationen (z.B. Parcours, Bieryoga, Schießen).
+​Daten-Korrektur: Tabellarische Ansicht aller Ergebnisse mit Lösch-Funktion.
+​Benutzer-Management: (Optional) Passwortänderung für das eigene Profil.
+​D. Modul: Live-Anzeige (Display)
+​AJAX-Refresh: Die Tabelle aktualisiert sich alle 10 Sekunden automatisch ohne Seiten-Reload.
+​Inhalt: Chronologische Liste der letzten Ergebnisse (Zeit, Teamname, Station, erreichte Leistung).
+​5. Design-Vorgaben
+​Stil: Professionell, "Dark-Mode" fähig oder schlichtes Grau/Blau/Orange-Schema.
+​Responsive: Volle Bedienbarkeit auf Smartphones (besonders die Scanner- und Eingabefelder).
+​UX: Große Buttons ("Finger-freundlich"), klares Feedback bei Erfolg (Grüne Bestätigung).
+​6. Technische Anforderungen für die KI-Rekonstruktion
+​Verwende password_hash() für Sicherheit.
+​Nutze PDO oder die SQLite3-Klasse in PHP.
+​Integriere die html5-qrcode JS-Bibliothek via CDN.
+​Trenne Logik (PHP) und Design (CSS) strikt.
+​Tipp für die Zukunft: Wenn du den Code neu generieren lässt, sag einfach: "Basierend auf der Spezifikation [Hier Text einfügen], erstelle mir bitte den vollständigen Code für das Modul [Name]."
