@@ -1,5 +1,13 @@
 <?php
-session_start(); include 'includes/db.php';
+session_start();
+include 'includes/db.php';
+
+// WEICHE FÜR CSV EXPORT (Muss vor jedem HTML kommen!)
+if (isset($_GET['module']) && $_GET['module'] == 'results_final' && isset($_GET['export'])) {
+    include "modules/results_final.php";
+    exit;
+}
+
 $module = $_GET['module'] ?? 'dashboard';
 if (!isset($_SESSION['user_id'])) $module = 'login';
 ?>
