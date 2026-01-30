@@ -1,5 +1,4 @@
 <?php
-// 1. Logik für QR-Code Login (AJAX/Fetch)
 if (isset($_POST['qr_token'])) {
     $stmt = $db->prepare("SELECT * FROM users WHERE login_token = :t");
     $stmt->bindValue(':t', $_POST['qr_token']);
@@ -9,79 +8,43 @@ if (isset($_POST['qr_token'])) {
         $_SESSION['name'] = $user['name'];
         setcookie("remember_me", $_POST['qr_token'], time() + (86400 * 30), "/");
         exit("success");
-    } else {
-        exit("invalid");
-    }
+    } exit("invalid");
 }
 
-// 2. Logik für klassischen Login (Benutzername & Passwort)
-$error = "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'])) {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
-
     $stmt = $db->prepare("SELECT * FROM users WHERE username = :u");
-    $stmt->bindValue(':u', $username);
-    $res = $stmt->execute();
-    $user = $res->fetchArray(SQLITE3_ASSOC);
-
-    if ($user && password_verify($password, $user['password'])) {
-        // Login erfolgreich
+    $stmt->bindValue(':u', $_POST['username']);
+    $user = $stmt->execute()->fetchArray(SQLITE3_ASSOC);
+    if ($user && password_verify($_POST['password'], $user['password'])) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['name'] = $user['name'];
-        
-        // Optional: Auch hier Cookie setzen, falls gewünscht
-        setcookie("remember_me", $user['login_token'], time() + (86400 * 30), "/");
-        
-        header("Location: index.php");
-        exit;
-    } else {
-        $error = "Benutzername oder Passwort falsch!";
-    }
+        header("Location: index.php"); exit;
+    } else { $err = "Login fehlgeschlagen!"; }
 }
 ?>
 
-<div class="login-box">
+<div class="card" style="max-width:400px; margin: 50px auto;">
     <h2 style="text-align:center;">Beerrace Login</h2>
-    
-    <?php if($error): ?>
-        <div style="background:#f8d7da; color:#721c24; padding:10px; border-radius:5px; margin-bottom:15px;">
-            <?php echo $error; ?>
-        </div>
-    <?php endif; ?>
-
-    <div id="login-qr-reader" style="width: 100%; border-radius: 8px; overflow: hidden;"></div>
-    <p style="text-align:center; font-size:0.9em; color:#666;">Oder mit Zugangsdaten anmelden:</p>
-
-    <form method="post" action="index.php?module=login">
-        <label>Benutzername:</label>
-        <input type="text" name="username" required placeholder="z.B. admin">
-        
-        <label>Passwort:</label>
-        <input type="password" name="password" required placeholder="Ihr Passwort">
-        
-        <button type="submit" class="btn-primary" style="margin-top:10px;">Einloggen</button>
+    <?php if(isset($err)) echo "<p style='color:red;'>$err</p>"; ?>
+    <form method="post">
+        <input type="text" name="username" placeholder="Benutzername" required>
+        <input type="password" name="password" placeholder="Passwort" required>
+        <button type="submit" class="btn-primary" style="width:100%;">Anmelden</button>
     </form>
+    <hr>
+    <button type="button" onclick="startLoginScan()" class="btn-success">📲 QR-Code Login</button>
+    <div id="login-reader" style="display:none; margin-top:10px;"></div>
 </div>
 
 <script>
-    function onScanSuccess(token) {
-        let fd = new FormData(); 
-        fd.append('qr_token', token);
-        fetch('index.php?module=login', {method:'POST', body:fd})
-        .then(res => res.text())
-        .then(t => { 
-            if(t === 'success') {
-                window.location.href = 'index.php';
-            } else {
-                alert("Ungültiger QR-Login-Token!");
-            }
+function startLoginScan() {
+    const r = document.getElementById('login-reader'); r.style.display='block';
+    const s = new Html5QrcodeScanner("login-reader", {fps:10, qrbox:200});
+    s.render(t => {
+        let fd = new FormData(); fd.append('qr_token', t);
+        fetch('index.php?module=login', {method:'POST', body:fd}).then(res=>res.text()).then(res=>{
+            if(res==='success') window.location.href='index.php'; else alert('Ungültig!');
         });
-    }
-    
-    // Scanner nur starten, wenn Element existiert
-    if (document.getElementById('login-qr-reader')) {
-        const loginScanner = new Html5QrcodeScanner("login-qr-reader", { fps: 10, qrbox: 200 });
-        loginScanner.render(onScanSuccess);
-    }
+    });
+}
 </script>
