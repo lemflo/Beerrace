@@ -1,43 +1,67 @@
-​Projekt-Spezifikation: Modularer RaceTracker (Bierkastenrennen)
-​1. Kernkonzept
-​Eine leichtgewichtige Web-App zur Zeiterfassung und Punkteauswertung für Events. Die App basiert auf PHP (Backend), SQLite (Datenbank), HTML5/CSS3 (Frontend) und JavaScript/AJAX (Interaktion). Die Architektur ist strikt modular aufgebaut.
-​2. Datenbank-Struktur (SQLite)
-​users: id, username, password (gehasht), name, login_token (für persistenten QR-Login).
-​stations: id, name.
-​participants: id, teamname, p1, p2, custom_id (Hex/QR-Code String).
-​results: id, timestamp, participant_id, station_id, user_id, points, time_seconds, type (points/time).
-​3. Modulare Architektur
-​Die App nutzt ein zentrales Routing-System über die index.php?module=X.
-​Verzeichnisstruktur:
-​/data: Beinhaltet die .sqlite Datei (Schreibrechte erforderlich).
-​/includes: Datenbankverbindung (db.php) und Authentifizierungslogik.
-​/modules: Einzelne PHP-Module (Login, Station, Admin, Display).
-​/api: Endpunkte für AJAX-Abfragen (Live-Daten).
-​/assets: CSS und JS (inkl. html5-qrcode Bibliothek).
-​4. Funktionsbeschreibung der Module
-​A. Authentifizierung & Persistent Login
-​Login: Support für klassischen Passwort-Login und QR-Code Login.
-​Persistence: Bei Erfolg wird ein login_token in einem Cookie gespeichert (30 Tage gültig), um automatisches Einloggen auf dem Gerät zu ermöglichen.
-​B. Modul: Station (Erfassung)
-​Ablauf: Wahl einer Station -> Scanner öffnet sich.
-​Input: Teilnehmer-ID via QR-Scanner (Kamera) oder manuelles Textfeld (Fallback).
-​Daten: Umschalter zwischen "Punkten" und "Zeit" (Format mm:ss).
-​Speichern: Eintrag in results mit Zeitstempel und User-ID des Helfers.
-​C. Modul: Administration
-​Team-Management: Anlegen/Löschen von Teilnehmern. QR-Scanner zur Zuweisung einer custom_id zu einem Teamnamen.
-​Stations-Management: Definieren der Stationen (z.B. Parcours, Bieryoga, Schießen).
-​Daten-Korrektur: Tabellarische Ansicht aller Ergebnisse mit Lösch-Funktion.
-​Benutzer-Management: (Optional) Passwortänderung für das eigene Profil.
-​D. Modul: Live-Anzeige (Display)
-​AJAX-Refresh: Die Tabelle aktualisiert sich alle 10 Sekunden automatisch ohne Seiten-Reload.
-​Inhalt: Chronologische Liste der letzten Ergebnisse (Zeit, Teamname, Station, erreichte Leistung).
-​5. Design-Vorgaben
-​Stil: Professionell, "Dark-Mode" fähig oder schlichtes Grau/Blau/Orange-Schema.
-​Responsive: Volle Bedienbarkeit auf Smartphones (besonders die Scanner- und Eingabefelder).
-​UX: Große Buttons ("Finger-freundlich"), klares Feedback bei Erfolg (Grüne Bestätigung).
-​6. Technische Anforderungen für die KI-Rekonstruktion
-​Verwende password_hash() für Sicherheit.
-​Nutze PDO oder die SQLite3-Klasse in PHP.
-​Integriere die html5-qrcode JS-Bibliothek via CDN.
-​Trenne Logik (PHP) und Design (CSS) strikt.
-​Tipp für die Zukunft: Wenn du den Code neu generieren lässt, sag einfach: "Basierend auf der Spezifikation [Hier Text einfügen], erstelle mir bitte den vollständigen Code für das Modul [Name]."
+​# System-Spezifikation: Beerrace – Modularer RaceTracker
+
+## 1. Vision & Branding
+**Name:** Beerrace
+**Zweck:** Webbasierte Verwaltung für ein Bierkastenrennen. Fokus auf Zeiterfassung, Punktemanagement und Trink-Kontrolle (Trinken ist nur an den Stationen erlaubt, um Verschütten zu verhindern).
+**Design:** Simpel, professionell, mobil-optimiert (Responsive), große Touch-Flächen für die Bedienung im Feld.
+
+## 2. Technische Basis
+* **Backend:** PHP 7.4+ (modularer Aufbau).
+* **Datenbank:** SQLite 3 (leichtgewichtig, dateibasiert).
+* **Frontend:** HTML5, CSS3, JavaScript (AJAX für Live-Updates).
+* **Bibliotheken:** html5-qrcode (via CDN) für plattformunabhängiges Kamera-Scanning im Browser.
+
+## 3. Datenbank-Schema (SQLite)
+* **users**: `id`, `username`, `password` (gehasht), `name`, `login_token` (für persistenten QR-Login).
+* **stations**: `id`, `name`.
+* **participants**: `id`, `teamname`, `p1`, `p2`, `custom_id` (Die gescannte Hex-ID/String vom Teilnehmer-Tag).
+* **results**: 
+    * `id` (Primary Key)
+    * `timestamp` (Default: CURRENT_TIMESTAMP)
+    * `participant_id` (Zuweisung via custom_id oder primary key)
+    * `station_id` (FK stations)
+    * `user_id` (FK users / Helfer)
+    * `points` (INT)
+    * `time_seconds` (INT)
+    * `bottles` (INT): Anzahl der an dieser Station getrunkenen Flaschen.
+    * `type` (TEXT: 'points' oder 'time').
+
+## 4. Funktionsumfang der Module
+
+### A. Authentifizierung & Sessions
+* **Login-Methoden:** Klassisch (User/Pass) oder via QR-Code (Token-basiert).
+* **Persistence:** Bei Erfolg wird ein `login_token` in einem Cookie ("remember_me") für 30 Tage gespeichert.
+* **Logout:** Löscht Session und Cookie.
+
+### B. Modul: Station (Erfassung)
+* **Stationswahl:** Helfer wählt seine Station aus einer Liste (wird in Session gespeichert).
+* **QR-Scanner:** Kamera-Interface zur Erfassung der Teilnehmer-ID.
+* **Manueller Fallback:** Textfeld zur händischen Eingabe der ID, falls der Scan fehlschlägt.
+* **Dateneingabe:** * Pflichtfeld: Anzahl geleerter Flaschen (`bottles`).
+    * Wahlweise: Zusatzpunkte oder Zeit (Eingabe in Min:Sek, Speicherung in Sekunden).
+* **Speichern:** Erzeugt einen Eintrag in der `results`-Tabelle.
+
+### C. Modul: Live-Anzeige (Display)
+* **Live-Ticker:** AJAX-Polling alle 10 Sekunden auf `api/live_data.php`.
+* **Anzeige:** Tabelle mit Teamname, Station, Ergebnis (Punkte oder Zeit) und der Anzahl der Flaschen (inkl. Bier-Icon-Visualisierung).
+
+### D. Modul: Administration
+* **Teilnehmer-Management:** Anlegen von Teams inkl. QR-Scanner, um Startnummern/IDs direkt zuzuweisen.
+* **Stations-Management:** CRUD-Operationen für Stationen.
+* **Daten-Audit:** Komplette Ergebnisliste einsehen, Werte korrigieren (Edit) oder Einträge löschen.
+* **Passwort-Management:** Benutzer können ihr eigenes Passwort ändern.
+
+## 5. Verzeichnisstruktur
+* `/index.php` (Zentrales Routing & Template)
+* `/setup.php` (Datenbank- und Admin-Initialisierung)
+* `/data/database.sqlite` (Datenbankverzeichnis)
+* `/includes/db.php` (Datenbankverbindung)
+* `/modules/` (login.php, station.php, display.php, admin.php, profile.php, logout.php)
+* `/api/live_data.php` (JSON/HTML Output für AJAX)
+* `/assets/style.css` (Zentrales Stylesheet)
+
+## 6. Implementierungshinweise für die KI
+* Nutze die `SQLite3`-Klasse von PHP.
+* Implementiere `password_hash()` und `password_verify()` für alle Benutzerkonten.
+* Der QR-Scanner muss in den Modulen `login`, `station` und `admin` (Teilnehmer-Anlage) verfügbar sein.
+* Achte beim `INSERT` in `results` darauf, dass die `participant_id` konsistent gematcht wird (custom_id bevorzugt).
