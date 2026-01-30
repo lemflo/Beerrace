@@ -2,7 +2,7 @@
 session_start();
 include 'includes/db.php';
 
-// Persistent Login Check
+// Persistent Login Check (Angemeldet bleiben)
 if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_me'])) {
     $stmt = $db->prepare("SELECT * FROM users WHERE login_token = :t");
     $stmt->bindValue(':t', $_COOKIE['remember_me']);
@@ -20,19 +20,19 @@ if (!isset($_SESSION['user_id'])) $module = 'login';
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bierrennen Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Beerrace Pro</title>
     <link rel="stylesheet" href="assets/style.css">
     <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
 <header>
-    <div class="logo">🍻 RaceTracker</div>
+    <div class="logo">🍻 Beerrace</div>
     <?php if(isset($_SESSION['user_id'])): ?>
     <nav>
         <a href="index.php">Main</a>
         <a href="index.php?module=station">Station</a>
-        <a href="index.php?module=display">Anzeige</a>
+        <a href="index.php?module=display">Live</a>
         <a href="index.php?module=admin">Admin</a>
         <a href="modules/logout.php">Logout</a>
     </nav>
@@ -41,13 +41,15 @@ if (!isset($_SESSION['user_id'])) $module = 'login';
 <main class="container">
     <?php 
     $path = "modules/$module.php";
-    if(file_exists($path)) include $path; 
-    else {
-        echo "<h1>Willkommen, {$_SESSION['name']}</h1>";
+    if(file_exists($path)) {
+        include $path; 
+    } else {
+        echo "<h1>Hallo, " . htmlspecialchars($_SESSION['name']) . "!</h1>";
+        echo "<p>Wähle eine Aktion aus dem Menü oder direkt hier:</p>";
         echo "<div class='grid-menu'>
-                <a href='index.php?module=station' class='card'>⏱ Station</a>
-                <a href='index.php?module=display' class='card'>🏆 Live-Liste</a>
-                <a href='index.php?module=admin' class='card'>⚙️ Admin</a>
+                <a href='index.php?module=station' class='card'>⏱ Station erfassen</a>
+                <a href='index.php?module=display' class='card'>🏆 Live-Ergebnisse</a>
+                <a href='index.php?module=admin' class='card'>⚙️ Verwaltung</a>
               </div>";
     }
     ?>
