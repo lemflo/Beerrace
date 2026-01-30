@@ -1,67 +1,68 @@
-​# System-Spezifikation: Beerrace – Modularer RaceTracker
+​ # SYSTEM SPEZIFIKATION: BEERRACE PRO
 
-## 1. Vision & Branding
-**Name:** Beerrace
-**Zweck:** Webbasierte Verwaltung für ein Bierkastenrennen. Fokus auf Zeiterfassung, Punktemanagement und Trink-Kontrolle (Trinken ist nur an den Stationen erlaubt, um Verschütten zu verhindern).
-**Design:** Simpel, professionell, mobil-optimiert (Responsive), große Touch-Flächen für die Bedienung im Feld.
+## 1. Übersicht
+Ein webbasiertes Event-Management-System zur Zeit- und Punkterfassung für Rallyes (z.B. Bollerwagenrennen). 
+Das System unterstützt QR-Code-Scanning, Live-Ranglisten und administrative Korrekturen.
 
-## 2. Technische Basis
-* **Backend:** PHP 7.4+ (modularer Aufbau).
-* **Datenbank:** SQLite 3 (leichtgewichtig, dateibasiert).
-* **Frontend:** HTML5, CSS3, JavaScript (AJAX für Live-Updates).
-* **Bibliotheken:** html5-qrcode (via CDN) für plattformunabhängiges Kamera-Scanning im Browser.
+## 2. Infrastruktur & Verzeichnisse
+/beerrace
+│
+├── /api              # Endpunkte für AJAX-Abfragen (Live-Daten, Suche)
+├── /assets           # CSS-Stylesheets und JS-Bibliotheken (QR-Scanner)
+├── /data             # SQLite Datenbank (Benötigt Schreibrechte!)
+├── /includes         # Datenbankverbindung und globale Hilfsfunktionen
+├── /modules          # Kernmodule (Frontend-Logik)
+├── index.php         # Zentraler Router & Layout
+└── setup.php         # Initialisierung und Reset-Schutz
 
 ## 3. Datenbank-Schema (SQLite)
-* **users**: `id`, `username`, `password` (gehasht), `name`, `login_token` (für persistenten QR-Login).
-* **stations**: `id`, `name`.
-* **participants**: `id`, `teamname`, `p1`, `p2`, `custom_id` (Die gescannte Hex-ID/String vom Teilnehmer-Tag).
-* **results**: 
-    * `id` (Primary Key)
-    * `timestamp` (Default: CURRENT_TIMESTAMP)
-    * `participant_id` (Zuweisung via custom_id oder primary key)
-    * `station_id` (FK stations)
-    * `user_id` (FK users / Helfer)
-    * `points` (INT)
-    * `time_seconds` (INT)
-    * `bottles` (INT): Anzahl der an dieser Station getrunkenen Flaschen.
-    * `type` (TEXT: 'points' oder 'time').
 
-## 4. Funktionsumfang der Module
 
-### A. Authentifizierung & Sessions
-* **Login-Methoden:** Klassisch (User/Pass) oder via QR-Code (Token-basiert).
-* **Persistence:** Bei Erfolg wird ein `login_token` in einem Cookie ("remember_me") für 30 Tage gespeichert.
-* **Logout:** Löscht Session und Cookie.
+### Tabelle: users
+- id (INT, PK): Eindeutige User-ID
+- username (TEXT): Login-Name
+- password (TEXT): Gehashtes Passwort (BCRYPT)
+- name (TEXT): Anzeigename (z.B. Station 1)
+- login_token (TEXT): QR-Login-Token für Helfer
 
-### B. Modul: Station (Erfassung)
-* **Stationswahl:** Helfer wählt seine Station aus einer Liste (wird in Session gespeichert).
-* **QR-Scanner:** Kamera-Interface zur Erfassung der Teilnehmer-ID.
-* **Manueller Fallback:** Textfeld zur händischen Eingabe der ID, falls der Scan fehlschlägt.
-* **Dateneingabe:** * Pflichtfeld: Anzahl geleerter Flaschen (`bottles`).
-    * Wahlweise: Zusatzpunkte oder Zeit (Eingabe in Min:Sek, Speicherung in Sekunden).
-* **Speichern:** Erzeugt einen Eintrag in der `results`-Tabelle.
+### Tabelle: stations
+- id (INT, PK): Stationsnummer
+- name (TEXT): Name der Station
+- type (TEXT): Erfassungstyp (points, time, start_time, end_time)
 
-### C. Modul: Live-Anzeige (Display)
-* **Live-Ticker:** AJAX-Polling alle 10 Sekunden auf `api/live_data.php`.
-* **Anzeige:** Tabelle mit Teamname, Station, Ergebnis (Punkte oder Zeit) und der Anzahl der Flaschen (inkl. Bier-Icon-Visualisierung).
+### Tabelle: participants
+- id (INT, PK): Interne Team-ID
+- teamname (TEXT): Name des Teams
+- p1 / p2 (TEXT): Teilnehmernamen
+- custom_id (TEXT, Unique): Externe ID (z.B. auf QR-Code gedruckt)
 
-### D. Modul: Administration
-* **Teilnehmer-Management:** Anlegen von Teams inkl. QR-Scanner, um Startnummern/IDs direkt zuzuweisen.
-* **Stations-Management:** CRUD-Operationen für Stationen.
-* **Daten-Audit:** Komplette Ergebnisliste einsehen, Werte korrigieren (Edit) oder Einträge löschen.
-* **Passwort-Management:** Benutzer können ihr eigenes Passwort ändern.
+### Tabelle: results
+- id (INT, PK): Eindeutiger Record
+- participant_id (TEXT): Fremdschlüssel zu participants
+- station_id (INT): Fremdschlüssel zu stations
+- checkin_at (DATETIME): Zeitstempel Start der Station
+- checkout_at (DATETIME): Zeitstempel Abschluss der Station
+- points (INT): Manuelle Punktzahl
+- penalty_points (INT): Strafpunkte (⚠️)
+- time_seconds (INT): Erfasste Zeit in Sekunden
+- bottles (INT): Anzahl getrunkener Biere (🍺)
+- status (TEXT): 'active' oder 'done'
+- type (TEXT): Kopie des Stationstyps zur Zeit der Erfassung
 
-## 5. Verzeichnisstruktur
-* `/index.php` (Zentrales Routing & Template)
-* `/setup.php` (Datenbank- und Admin-Initialisierung)
-* `/data/database.sqlite` (Datenbankverzeichnis)
-* `/includes/db.php` (Datenbankverbindung)
-* `/modules/` (login.php, station.php, display.php, admin.php, profile.php, logout.php)
-* `/api/live_data.php` (JSON/HTML Output für AJAX)
-* `/assets/style.css` (Zentrales Stylesheet)
+## 4. Funktionslogik
 
-## 6. Implementierungshinweise für die KI
-* Nutze die `SQLite3`-Klasse von PHP.
-* Implementiere `password_hash()` und `password_verify()` für alle Benutzerkonten.
-* Der QR-Scanner muss in den Modulen `login`, `station` und `admin` (Teilnehmer-Anlage) verfügbar sein.
-* Achte beim `INSERT` in `results` darauf, dass die `participant_id` konsistent gematcht wird (custom_id bevorzugt).
+
+### A. Zeitberechnung (results_final.php)
+1. Netto-Race = MAX(time_seconds @ end_time) - MIN(time_seconds @ start_time)
+2. Additive-Zeit = SUM(time_seconds @ type 'time')
+3. Straf-Zeit = SUM(penalty_points) * Konfigurationswert (z.B. 60 Sek)
+4. Gesamt-Zeit = Netto-Race + Additive-Zeit + Straf-Zeit
+
+### B. Zugriffsschutz
+- Login-Pflicht für alle Module außer Display (optional).
+- `setup.php` mit Datei-Prüfungs-Sperre gegen versehentliches Löschen.
+
+## 5. Schnittstellen
+- QR-Scanner: Integration via html5-qrcode.js.
+- Export: CSV-Stream mit UTF-8 BOM für direkte Excel-Kompatibilität.
+- Live-API: JSON-Output für Team-Lookup; HTML-Partial für Live-Monitor.
