@@ -1,11 +1,162 @@
-body { font-family: sans-serif; background: #f4f7f6; margin: 0; }
-header { background: #2c3e50; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-nav a { color: white; text-decoration: none; margin-left: 15px; font-weight: bold; }
-.container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
-.card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-input, select, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-.btn-primary { background: #3498db; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; }
-.btn-success { background: #27ae60; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; }
-.btn-danger { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-table { width: 100%; border-collapse: collapse; }
-td { padding: 10px; border-bottom: 1px solid #eee; }
+/* BEERRACE PRO 2026 - MODERN THEME */
+
+:root {
+    --primary: #2c3e50;
+    --accent: #f39c12;
+    --success: #27ae60;
+    --danger: #e74c3c;
+    --bg: #f4f7f6;
+    --card-bg: #ffffff;
+    --text: #333;
+    --text-light: #7f8c8d;
+    --shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+* { box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+
+body { 
+    background-color: var(--bg); 
+    color: var(--text); 
+    margin: 0; 
+    line-height: 1.6; 
+}
+
+.container { 
+    max-width: 1000px; 
+    margin: 0 auto; 
+    padding: 0 15px; 
+}
+
+/* HEADER & NAV */
+header { 
+    background: var(--primary); 
+    color: white; 
+    padding: 1rem 0; 
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+header .container { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+}
+
+header strong { font-size: 1.4rem; letter-spacing: 1px; }
+
+nav a { 
+    color: #ecf0f1; 
+    text-decoration: none; 
+    margin-left: 15px; 
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+nav a:hover { color: var(--accent); }
+
+/* CARDS & LAYOUT */
+main { padding: 2rem 0; }
+
+.card { 
+    background: var(--card-bg); 
+    padding: 20px; 
+    border-radius: 10px; 
+    box-shadow: var(--shadow); 
+    margin-bottom: 20px; 
+    border: 1px solid #eee;
+}
+
+h2, h3 { color: var(--primary); margin-top: 0; }
+
+/* FORMS & INPUTS */
+input, select, textarea { 
+    width: 100%; 
+    padding: 12px; 
+    margin: 8px 0; 
+    border: 1px solid #ddd; 
+    border-radius: 6px; 
+    font-size: 1rem;
+    background: #fafafa;
+}
+
+input:focus, select:focus { 
+    outline: none; 
+    border-color: var(--accent); 
+    background: #fff;
+}
+
+label { font-weight: bold; font-size: 0.85rem; color: var(--primary); }
+
+/* BUTTONS */
+button, .btn-primary, .btn-success, .btn-danger { 
+    border: none; 
+    padding: 12px 20px; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-weight: bold; 
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    transition: filter 0.3s, transform 0.1s;
+    display: inline-block;
+    text-align: center;
+}
+
+.btn-primary { background: var(--primary); color: white; }
+.btn-success { background: var(--success); color: white; }
+.btn-danger { background: var(--danger); color: white; }
+
+button:hover { filter: brightness(1.1); }
+button:active { transform: scale(0.98); }
+
+/* TABLES */
+table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    margin-top: 10px;
+}
+
+th { 
+    text-align: left; 
+    padding: 12px; 
+    background: #f8f9fa; 
+    border-bottom: 2px solid #eee;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+}
+
+td { 
+    padding: 12px; 
+    border-bottom: 1px solid #eee; 
+}
+
+tr:hover { background-color: #fcfcfc; }
+
+/* UTILS */
+.success { 
+    background: #d4edda; 
+    color: #155724; 
+    padding: 15px; 
+    border-radius: 6px; 
+    margin-bottom: 20px; 
+    border: 1px solid #c3e6cb;
+}
+
+#reader { 
+    width: 100%; 
+    max-width: 400px; 
+    margin: 0 auto; 
+    border: 2px solid var(--accent); 
+    border-radius: 10px; 
+    overflow: hidden; 
+}
+
+/* RESPONSIVE */
+@media (max-width: 600px) {
+    header .container { flex-direction: column; text-align: center; }
+    nav { margin-top: 15px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+    nav a { margin: 0; }
+    .card { padding: 15px; }
+}
