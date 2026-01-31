@@ -1,5 +1,4 @@
 <?php
-// Konfiguration: Wie viele Sekunden Strafe pro Strafpunkt?
 $seconds_per_penalty = 60; 
 
 function getFinalScores($db, $seconds_per_penalty) {
@@ -9,35 +8,21 @@ function getFinalScores($db, $seconds_per_penalty) {
     while ($team = $teams_res->fetchArray(SQLITE3_ASSOC)) {
         $tid = (string)$team['id'];
         $cid = (string)$team['custom_id'];
+        $id_query = "(participant_id='$tid' OR participant_id='$cid')";
 
-        // 1. Start- und Zielzeit ermitteln
-        // Wir suchen explizit nach beiden möglichen IDs im Feld participant_id
-        $start = $db->querySingle("SELECT MIN(time_seconds) FROM results WHERE (participant_id='$tid' OR participant_id='$cid') AND type='start_time' AND status='done'");
-        $end = $db->querySingle("SELECT MAX(time_seconds) FROM results WHERE (participant_id='$tid' OR participant_id='$cid') AND type='end_time' AND status='done'");
+        // Start und Ziel finden
+        $start = $db->querySingle("SELECT time_seconds FROM results WHERE $id_query AND type='start_time' AND status='done' ORDER BY timestamp DESC LIMIT 1");
+        $end = $db->querySingle("SELECT time_seconds FROM results WHERE $id_query AND type='end_time' AND status='done' ORDER BY timestamp DESC LIMIT 1");
 
-        // 2. Reine Parcours-Zeiten summieren (Stationen vom Typ 'time')
-        $parcours_time = $db->querySingle("SELECT SUM(time_seconds) FROM results WHERE (participant_id='$tid' OR participant_id='$cid') AND type='time' AND status='done'") ?: 0;
-
-        // 3. Strafpunkte und Biere summieren
-        $stats = $db->query("SELECT SUM(penalty_points) as tp, SUM(bottles) as tb FROM results WHERE (participant_id='$tid' OR participant_id='$cid') AND status='done'")->fetchArray(SQLITE3_ASSOC);
+        $parcours_time = $db->querySingle("SELECT SUM(time_seconds) FROM results WHERE $id_query AND type='time' AND status='done'") ?: 0;
+        $stats = $db->query("SELECT SUM(penalty_points) as tp, SUM(bottles) as tb FROM results WHERE $id_query AND status='done'")->fetchArray(SQLITE3_ASSOC);
         
         $total_penalties = $stats['tp'] ?: 0;
         $total_bottles = $stats['tb'] ?: 0;
-
-        // 4. Netto-Rennzeit berechnen
-        $net_race_time = 0;
-        $has_finished = false;
-        
-        // WICHTIG: Prüfung ob beide Zeiten existieren und ungleich 0 sind
-        if ($start > 0 && $end > 0) {
-            $net_race_time = $end - $start;
-            $has_finished = true;
-        }
-
-        // 5. Manuelle Korrektur
         $manual_adj = (int)($team['time_adjustment'] ?? 0);
 
-        // 6. Gesamtzeit
+        $has_finished = ($start > 0 && $end > 0);
+        $net_race_time = $has_finished ? ($end - $start) : 0;
         $final_time_seconds = $net_race_time + $parcours_time + ($total_penalties * $seconds_per_penalty) + $manual_adj;
 
         $scores[] = [
@@ -59,26 +44,15 @@ function getFinalScores($db, $seconds_per_penalty) {
     return $scores;
 }
 
-// CSV Export
-if (isset($_GET['export'])) {
-    $data = getFinalScores($db, $seconds_per_penalty);
-    header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename=ergebnisse.csv');
-    $output = fopen('php://output', 'w');
-    fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
-    fputcsv($output, ['Rang', 'Team', 'Zeit', 'Bier'], ';');
-    foreach ($data as $i => $s) {
-        fputcsv($output, [$i+1, $s['teamname'], $s['has_finished'] ? gmdate("H:i:s", $s['final_time']) : 'n.a.', $s['bottles']], ';');
-    }
-    exit;
-}
-
 $scores = getFinalScores($db, $seconds_per_penalty);
 ?>
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+<div style="position: relative; margin-bottom: 20px;">
     <h2>🏆 Rangliste</h2>
-    <a href="index.php?module=results_final&export=csv" class="btn-success" style="text-decoration:none; padding: 5px 10px; font-size: 0.75rem; height: fit-content;">📥 CSV Export</a>
+    <a href="index.php?module=results_final&export=csv" class="btn-success" 
+       style="position: absolute; top: 0; right: 0; text-decoration: none; padding: 6px 12px; font-size: 0.75rem; width: auto; display: inline-block;">
+       📥 CSV Export
+    </a>
 </div>
 
 <div class="card">
@@ -94,23 +68,16 @@ $scores = getFinalScores($db, $seconds_per_penalty);
         </thead>
         <tbody>
             <?php foreach ($scores as $i => $s): ?>
-            <tr style="<?= $s['has_finished'] ? '' : 'opacity:0.6;' ?>">
+            <tr style="<?= $s['has_finished'] ? '' : 'opacity:0.5;' ?>">
                 <td>#<?= $i + 1 ?></td>
-                <td>
-                    <strong><?= htmlspecialchars($s['teamname']) ?></strong><br>
-                    <small style="color:#666;"><?= htmlspecialchars($s['members']) ?></small>
-                </td>
-                <td>
-                    <strong><?= $s['has_finished'] ? gmdate("H:i:s", $s['final_time']) : '--:--:--' ?></strong>
-                </td>
+                <td><strong><?= htmlspecialchars($s['teamname']) ?></strong></td>
+                <td><strong><?= $s['has_finished'] ? gmdate("H:i:s", $s['final_time']) : '--:--:--' ?></strong></td>
                 <td><?= $s['bottles'] ?></td>
                 <td>
                     <?php if($s['adj'] != 0): ?>
-                        <small style="background:#eee; padding:2px 5px; border-radius:3px;"><?= ($s['adj']>0?'+':'').$s['adj'] ?>s</small>
+                        <small style="background:#eee; padding:2px 4px;"><?= ($s['adj']>0?'+':'').$s['adj'] ?>s</small>
                     <?php endif; ?>
-                    <?php if(!$s['has_finished']): ?>
-                        <small style="color:#e74c3c; font-weight:bold;">Unvollständig</small>
-                    <?php endif; ?>
+                    <?= !$s['has_finished'] ? '<small style="color:red;">Unvollständig</small>' : '' ?>
                 </td>
             </tr>
             <?php endforeach; ?>
